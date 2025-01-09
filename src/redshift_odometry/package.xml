@@ -3,7 +3,7 @@
 <package format="3">
   <name>redshift_odometry</name>
   <version>0.0.0</version>
-  <description>FRC 2024 odometry</description>
+  <description>FRC 2025 odometry</description>
   <maintainer email="bzeliger@gmail.com">redshift</maintainer>
   <license>BSD</license>
 

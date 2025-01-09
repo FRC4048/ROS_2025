@@ -23,7 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'redshift_combine = redshift_odometry.redshift_combine:main',
+            'redshift_cam_node = redshift_odometry.redshift_cam_node:main',            
             'redshift_server = redshift_odometry.redshift_server:main',
             'redshift_tcp = redshift_odometry.redshift_tcp:main'
         ],
