@@ -15,7 +15,7 @@ def generate_launch_description():
                              name='cam_driver',
                              remappings=[('/image_raw', '/image')],
                              parameters=[
-                                {'video_device': '/dev/video2'},
+                                {'video_device': '/dev/video0'},
                                 {'camera_name': 'arducam_cam'},
                                 {'frame_id': 'cam1'},
                                 {'brightness': -16},
