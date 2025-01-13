@@ -70,7 +70,7 @@ def generate_launch_description():
 
    # the tf below is tag1 with fake position for testing...need to be deleted
    ld.add_action(create_transform_node(1, 0.5, 0, 0,      1.57, 0, 1.57))    # tag is 0.5m on x wrt world
-   
+   ld.add_action(create_transform_node(3, 1, 1, 0,      0   , 0, 0   ))    
    #
    # below we create a set of static transforms from world to each tag
    # The rotation is applied in a weired order.....Z-Y-X  Yaw-Pitch-Roll 
@@ -78,7 +78,7 @@ def generate_launch_description():
    #
    #ld.add_action(create_transform_node(1, 593.68, 9.68, 53.38, -2.62, 0.0, 1.57))
    ld.add_action(create_transform_node(2, 637.21, 34.79, 53.38, -2.62, 0.0, 1.57))
-   ld.add_action(create_transform_node(3, 652.73, 196.17, 57.13, -1.57, 0.0, 1.57))
+   #ld.add_action(create_transform_node(3, 652.73, 196.17, 57.13, -1.57, 0.0, 1.57))
    ld.add_action(create_transform_node(4, 652.73, 218.42, 57.13, -1.57, 0.0, 1.57))
    #ld.add_action(create_transform_node(5, 578.77, 323.00, 53.38, 0.0, 0.0, 1.57))
    #ld.add_action(create_transform_node(6, 72.5, 323.00, 53.38, 0.0, 0.0, 1.57))
