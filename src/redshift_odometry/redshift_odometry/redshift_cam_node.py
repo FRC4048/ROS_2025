@@ -54,24 +54,28 @@ class TransformNode(Node):
         # create a /detections callback
         self.create_subscription(AprilTagDetectionArray, '/detections', self.detection_callback, 10)
                
-                   
+    # -----------------------------------------------------------------------------------------
+    # This callback function is used to search for a detection.
+    # We loop through all detections, find tf to robot and publish it.
+    # -----------------------------------------------------------------------------------------                   
     def detection_callback(self, msg):
-       print("BZ--------------------------------------------------------")
+       
        for detection in msg.detections:
+          tf_wt = self.tag_manager.get_tf_for_tag(detection.id)
           tagid = "tag" + str(detection.id) + "c" + str(self.cam_id)
-          try:
-             print("BZ: tag detected="+tagid)
-             tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time(), TIMEOUT)  # tag->robot in tag frame
+          try:             
+             if (self.debug > 1):
+                print(self.tf_buffer.all_frames_as_string())
+
+             tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time(), Duration(seconds = 0.0))  # tag->robot in tag frame
              
              # make sure the tf is not a stale one, if it is - ignore it
-             if self.stale_tag[i-1] == tf_tr.header.stamp.nanosec:
+             if self.stale_tag[detection.id-1] == tf_tr.header.stamp.nanosec:
                 print("BZ: error, tag="+tagid)
                 continue
              else:
-                self.stale_tag[i-1] = tf_tr.header.stamp.nanosec   
+                self.stale_tag[detection.id-1] = tf_tr.header.stamp.nanosec   
                              
-             print(self.tf_buffer.all_frames_as_string())
-             print("BZ: found tag " + tagid)
              self.tf_wr = self.combine_transforms(tf_wt, tf_tr) # calculate world->robot from world->tag and tag->robot
              
              # calculate distance between robot and tag
@@ -88,73 +92,18 @@ class TransformNode(Node):
               					 self.tf_wr.transform.rotation.z, self.tf_wr.transform.rotation.w], axes='szyx')
      
              pose_message = RoborioOdometry()
-             pose_message.tag = i
+             pose_message.tag = detection.id
              pose_message.x = self.tf_wr.transform.translation.x
              pose_message.y = self.tf_wr.transform.translation.y
              pose_message.yaw = math.degrees(angles[0])
              pose_message.distance = distance
              self.pose_publisher.publish(pose_message)
           except Exception as e:
-             if (self.debug > 1):
+             if (self.debug > 0):
                 self.get_logger().info(f'Cound not transform: {e}')
     
     
-    # -----------------------------------------------------------------------------------------
-    # This callback function is used to search for a detection.
-    # We loop through all tags, if we have a detection we publish it.
-    # -----------------------------------------------------------------------------------------
-    def lookup_transform(self):
-       TIMEOUT = Duration(seconds = 0.0)  # lookup_transform() with timeout>0 is too slow. 
-       if (not self.tag_manager.received_all_static_tf):
-          return   
-       # cycle through tags and see if we have an April Tag detection
-       # tf_wt will have tf from world->tag in world frame
-       #for i, tf_wt in self.tag_dict.items():
-       for i in self.tag_manager.get_all_tags():
-          tf_wt = self.tag_manager.get_tf_for_tag(i)
-          tagid = "tag" + str(i) + "c" + str(self.cam_id)
-          
-          #if (not self.tf_buffer.can_transform(tagid, 'robot', rclpy.time.Time())):
-          #   continue
 
-          try:
-             tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time(), TIMEOUT)  # tag->robot in tag frame
-             
-             # make sure the tf is not a stale one, if it is - ignore it
-             if self.stale_tag[i-1] == tf_tr.header.stamp.nanosec:
-                continue
-             else:
-                self.stale_tag[i-1] = tf_tr.header.stamp.nanosec   
-                             
-             #print(self.tf_buffer.all_frames_as_string())
-             
-             self.tf_wr = self.combine_transforms(tf_wt, tf_tr) # calculate world->robot from world->tag and tag->robot
-             
-             # calculate distance between robot and tag
-             distance = math.sqrt((tf_wt.transform.translation.x - self.tf_wr.transform.translation.x) ** 2 + 
-                                  (tf_wt.transform.translation.y - self.tf_wr.transform.translation.y) ** 2)
-             
-             # pack in TFMessage and publish (debug)
-             if (self.debug):
-               tf_message = TFMessage(transforms=[self.tf_wr])
-               self.debug_publisher.publish(tf_message)
-               
-             # build and send the pose message  
-             angles = tft.euler_from_quaternion([self.tf_wr.transform.rotation.x, self.tf_wr.transform.rotation.y,
-              					 self.tf_wr.transform.rotation.z, self.tf_wr.transform.rotation.w], axes='szyx')
-     
-             pose_message = RoborioOdometry()
-             pose_message.tag = i
-             pose_message.x = self.tf_wr.transform.translation.x
-             pose_message.y = self.tf_wr.transform.translation.y
-             pose_message.yaw = math.degrees(angles[0])
-             pose_message.distance = distance
-             self.pose_publisher.publish(pose_message)
-          except Exception as e:
-             if (self.debug > 1):
-                self.get_logger().info(f'Cound not transform: {e}')
-                
-       
     # -----------------------------------------------------------------------------------------
     # This function gets two transforms:
     #     trans_ab is world -> tag (tag wrt world - in world frame
