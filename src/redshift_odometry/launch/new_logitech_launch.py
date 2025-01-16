@@ -3,6 +3,8 @@ from launch_ros.actions import Node
 from launch import LaunchDescription
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
+
+from redshift_odometry.TagTable import *
  	 	  
 def generate_launch_description():
    ld = LaunchDescription()
@@ -64,44 +66,25 @@ def generate_launch_description():
       respawn_delay=2   
    )
    
-
-
-
-   # the tf below is tag1 with fake position for testing...need to be deleted
-   ld.add_action(create_transform_node(1, 0.5, 0, 0,      1.57, 0, 1.57))    # tag is 0.5m on x wrt world
-   ld.add_action(create_transform_node(3, 1, 1, 0,      0   , 0, 0   ))    
-   #
-   # below we create a set of static transforms from world to each tag
+   
+   # Create a set of static transforms from world to each tag
    # The rotation is applied in a weired order.....Z-Y-X  Yaw-Pitch-Roll 
    # Positive is clockwise (right hand rule)
-   #
-   #ld.add_action(create_transform_node(1, 593.68, 9.68, 53.38, -2.62, 0.0, 1.57))
-   ld.add_action(create_transform_node(2, 637.21, 34.79, 53.38, -2.62, 0.0, 1.57))
-   #ld.add_action(create_transform_node(3, 652.73, 196.17, 57.13, -1.57, 0.0, 1.57))
-   ld.add_action(create_transform_node(4, 652.73, 218.42, 57.13, -1.57, 0.0, 1.57))
-   #ld.add_action(create_transform_node(5, 578.77, 323.00, 53.38, 0.0, 0.0, 1.57))
-   #ld.add_action(create_transform_node(6, 72.5, 323.00, 53.38, 0.0, 0.0, 1.57))
-   #ld.add_action(create_transform_node(7, -1.50, 218.42, 57.13, 1.57, 0.0, 1.57))
-   #ld.add_action(create_transform_node(8, -1.50, 196.17, 57.13, 1.57, 0.0, 1.57))
-   #ld.add_action(create_transform_node(9, 14.02, 34.79, 53.38, 2.62, 0.0, 1.57))
-   #ld.add_action(create_transform_node(10, 57.54, 9.68, 53.38, 2.62, 0.0, 1.57))
-   #ld.add_action(create_transform_node(11, 468.69, 146.19, 52.00, 0.5236, 0.0, 1.57))
-   #ld.add_action(create_transform_node(12, 468.69, 177.10, 52.00, 2.62, 0.0, 1.57))
-   #ld.add_action(create_transform_node(13, 441.74, 161.62, 52.00, -1.57, 0.0, 1.57))
-   #ld.add_action(create_transform_node(14, 209.48, 161.62, 52.00, 1.57, 0.0, 1.57))
-   #ld.add_action(create_transform_node(15, 182.73, 177.10, 52.00, -2.62, 0.0, 1.57))      
-   #ld.add_action(create_transform_node(16, 182.73, 146.19, 52.00, 5.76, 0.0, 1.57))   
    
-   
-   ld.add_action(robot_to_cam1_node)   
-   ld.add_action(image_processing_node)
-   ld.add_action(apriltag_cam1_node)
-       
-   return ld
-   
-   
-   
-def create_transform_node(tag, x, y, z, roll, pitch, yaw):
+   for tag_entry in TagTable.tag_table:
+      ld.add_action(create_transform_node(tag_entry))   
+
+
+
+def create_transform_node(entry):
+   tag   = entry["tagid"]
+   x     = entry["x"]
+   y     = entry["y"]
+   z     = entry["z"]
+   roll  = entry["roll"]
+   pitch = entry["pitch"]
+   yaw   = entry["yaw"]
+               
    nd = Node(
       package='tf2_ros',
       executable='static_transform_publisher',
