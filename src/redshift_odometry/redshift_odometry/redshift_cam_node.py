@@ -3,6 +3,9 @@ from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener, TransformBroadcaster
 from geometry_msgs.msg import TransformStamped, PoseStamped
 from tf2_msgs.msg import TFMessage
+from rclpy.duration import Duration
+from apriltag_msgs.msg import AprilTagDetectionArray
+from apriltag_msgs.msg import AprilTagDetection
 from roborio_msgs.msg import RoborioOdometry
 from redshift_odometry.TagManager import *
 
@@ -17,7 +20,6 @@ class TransformNode(Node):
     def __init__(self):
         super().__init__('transform_node')
         
-        self.tag_count = 4        # TODO - get this from a parm
         self.cam_id = 1           # TODO - NEED to get this as a parm to support multiple cameras
         self.lookup_freq = 0.02   # callback frequency in Seconds
         self.debug = 1            # 0 - off 1 - publish TEMP (for rviz), 2 - verbose
@@ -31,9 +33,7 @@ class TransformNode(Node):
         # start tag manager to find all static transforms
         self.get_logger().info("Getting tag transformations")
         
-        
-        self.tag_manager = TagManager(self, self.tag_count, self.get_logger())
-        self.tag_manager.start_tagging()
+        self.tag_manager = TagManager(self, self.get_logger())
 
         # create TF2 buffer and listener to get camera transforms
         self.tf_buffer = Buffer()
@@ -45,24 +45,24 @@ class TransformNode(Node):
         self.pose_publisher = self.create_publisher(RoborioOdometry, '/pose', 10)
         
         # create a timer callback to periodically perform position lookup
-        self.timer = self.create_timer(self.lookup_freq, self.lookup_transform)
+        #self.timer = self.create_timer(self.lookup_freq, self.lookup_transform)
                
-    
+        # create a /detections callback
+        self.create_subscription(AprilTagDetectionArray, '/detections', self.detection_callback, 10)
+               
     # -----------------------------------------------------------------------------------------
     # This callback function is used to search for a detection.
-    # We loop through all tags, if we have a detection we publish it.
-    # -----------------------------------------------------------------------------------------
-    def lookup_transform(self):
-       if (not self.tag_manager.received_all_static_tf):
-          return   
-       # cycle through tags and see if we have an April Tag detection
-       # tf_wt will have tf from world->tag in world frame
-       #for i, tf_wt in self.tag_dict.items():
-       for i in self.tag_manager.get_all_tags():
-          tf_wt = self.tag_manager.get_tf_for_tag(i)
-          tagid = "tag" + str(i) + "c" + str(self.cam_id)
-          try:
-             tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time())  # tag->robot in tag frame
+    # We loop through all detections, find tf to robot and publish it.
+    # -----------------------------------------------------------------------------------------                   
+    def detection_callback(self, msg):
+       for detection in msg.detections:
+          tf_wt = self.tag_manager.get_tf_for_tag(detection.id)
+          tagid = "tag" + str(detection.id) + "c" + str(self.cam_id)
+          try:             
+             if (self.debug > 1):
+                print(self.tf_buffer.all_frames_as_string())
+
+             tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time(), Duration(seconds = 0.0))  # tag->robot in tag frame 
              self.tf_wr = self.combine_transforms(tf_wt, tf_tr) # calculate world->robot from world->tag and tag->robot
              
              # calculate distance between robot and tag
@@ -79,16 +79,18 @@ class TransformNode(Node):
               					 self.tf_wr.transform.rotation.z, self.tf_wr.transform.rotation.w], axes='szyx')
      
              pose_message = RoborioOdometry()
-             pose_message.tag = i
+             pose_message.tag = detection.id
              pose_message.x = self.tf_wr.transform.translation.x
              pose_message.y = self.tf_wr.transform.translation.y
              pose_message.yaw = math.degrees(angles[0])
              pose_message.distance = distance
              self.pose_publisher.publish(pose_message)
           except Exception as e:
-             if (self.debug > 1):
-                self.get_logger().info(f'Cound not transform: {e}')  
-       
+             if (self.debug > 0):
+                self.get_logger().info(f'Cound not transform: {e}')
+    
+    
+
     # -----------------------------------------------------------------------------------------
     # This function gets two transforms:
     #     trans_ab is world -> tag (tag wrt world - in world frame
@@ -104,7 +106,7 @@ class TransformNode(Node):
        trans_ac.header.frame_id = trans_bc.header.frame_id[:-2]  #remove the c1 from tag1c1
        trans_ac.header.frame_id = "world"
        trans_ac.child_frame_id = trans_ab.child_frame_id
-       trans_ac.child_frame_id = "TEMP"     
+       trans_ac.child_frame_id = "TEMP"+ str(self.cam_id)     
        
        pos_ab = [trans_ab.transform.translation.x, trans_ab.transform.translation.y, trans_ab.transform.translation.z]
        pos_bc = [trans_bc.transform.translation.x, trans_bc.transform.translation.y, trans_bc.transform.translation.z]
