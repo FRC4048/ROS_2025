@@ -20,7 +20,6 @@ class TransformNode(Node):
     def __init__(self):
         super().__init__('transform_node')
         
-        self.tag_count = 22       # TODO - get this from a tag_table!!!!!
         self.cam_id = 1           # TODO - NEED to get this as a parm to support multiple cameras
         self.lookup_freq = 0.02   # callback frequency in Seconds
         self.debug = 1            # 0 - off 1 - publish TEMP (for rviz), 2 - verbose
@@ -34,10 +33,7 @@ class TransformNode(Node):
         # start tag manager to find all static transforms
         self.get_logger().info("Getting tag transformations")
         
-        self.stale_tag = [0] * self.tag_count
-        
-        self.tag_manager = TagManager(self, self.tag_count, self.get_logger())
-        self.tag_manager.start_tagging()
+        self.tag_manager = TagManager(self, self.get_logger())
 
         # create TF2 buffer and listener to get camera transforms
         self.tf_buffer = Buffer()
@@ -59,7 +55,6 @@ class TransformNode(Node):
     # We loop through all detections, find tf to robot and publish it.
     # -----------------------------------------------------------------------------------------                   
     def detection_callback(self, msg):
-       
        for detection in msg.detections:
           tf_wt = self.tag_manager.get_tf_for_tag(detection.id)
           tagid = "tag" + str(detection.id) + "c" + str(self.cam_id)
@@ -67,15 +62,7 @@ class TransformNode(Node):
              if (self.debug > 1):
                 print(self.tf_buffer.all_frames_as_string())
 
-             tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time(), Duration(seconds = 0.0))  # tag->robot in tag frame
-             
-             # make sure the tf is not a stale one, if it is - ignore it
-             if self.stale_tag[detection.id-1] == tf_tr.header.stamp.nanosec:
-                print("BZ: error, tag="+tagid)
-                continue
-             else:
-                self.stale_tag[detection.id-1] = tf_tr.header.stamp.nanosec   
-                             
+             tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time(), Duration(seconds = 0.0))  # tag->robot in tag frame 
              self.tf_wr = self.combine_transforms(tf_wt, tf_tr) # calculate world->robot from world->tag and tag->robot
              
              # calculate distance between robot and tag
