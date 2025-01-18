@@ -1,4 +1,5 @@
 import os
+import math
 from launch_ros.actions import Node
 from launch import LaunchDescription
 from launch_ros.actions import ComposableNodeContainer
@@ -74,16 +75,23 @@ def generate_launch_description():
    for tag_entry in TagTable.tag_table:
       ld.add_action(create_transform_node(tag_entry))   
 
-
-
+   ld.add_action(robot_to_cam1_node)   
+   ld.add_action(image_processing_node)
+   ld.add_action(apriltag_cam1_node)
+       
+   return ld
+   
+   
+   
+   
 def create_transform_node(entry):
    tag   = entry["tagid"]
    x     = entry["x"]
    y     = entry["y"]
    z     = entry["z"]
-   roll  = entry["roll"]
-   pitch = entry["pitch"]
-   yaw   = entry["yaw"]
+   roll  = math.radians(entry["roll"])
+   pitch = math.radians(entry["pitch"])
+   yaw   = math.radians(entry["yaw"])
                
    nd = Node(
       package='tf2_ros',

@@ -20,7 +20,7 @@ class TransformNode(Node):
     def __init__(self):
         super().__init__('transform_node')
         
-        self.tag_count = 4        # TODO - get this from a parm
+        self.tag_count = 22       # TODO - get this from a tag_table!!!!!
         self.cam_id = 1           # TODO - NEED to get this as a parm to support multiple cameras
         self.lookup_freq = 0.02   # callback frequency in Seconds
         self.debug = 1            # 0 - off 1 - publish TEMP (for rviz), 2 - verbose

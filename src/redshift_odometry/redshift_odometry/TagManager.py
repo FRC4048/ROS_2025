@@ -12,7 +12,7 @@ class TagManager:
 
     def __init__(self, node, tags, logger):
        self.node = node
-       self.number_of_tags = tags
+       self.number_of_tags = tags  ### BZ - this needs to change to cycle through the tag_table
        self.logger = logger
        self.received_all_static_tf = False
        self.__tag_dict = {}
