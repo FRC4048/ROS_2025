@@ -23,7 +23,6 @@ class TransformNode(Node):
         super().__init__('transform_node')
         
         self.cam_id = self.declare_parameter('camera_instance', 'cam1').get_parameter_value().string_value
-        self.lookup_freq = 0.02   # callback frequency in Seconds
         self.debug = 1            # 0 - off 1 - publish TEMP (for rviz), 2 - verbose
         
         # the following is a rotation to adjust rotation of robot frame to be FLU (Forward-Left-Up) like world
@@ -47,9 +46,6 @@ class TransformNode(Node):
         self.debug_publisher = self.create_publisher(TFMessage, '/tf', 10)
         # set up pose publisher
         self.pose_publisher = self.create_publisher(RoborioOdometry, '/pose', 10)
-        
-        # create a timer callback to periodically perform position lookup
-        #self.timer = self.create_timer(self.lookup_freq, self.lookup_transform)
                
         # create a /detections callback
         self.create_subscription(AprilTagDetectionArray, '/detections', self.detection_callback, 10)
@@ -67,25 +63,25 @@ class TransformNode(Node):
                 print(self.tf_buffer.all_frames_as_string())
 
              tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time(), Duration(seconds = 0.0))  # tag->robot in tag frame 
-             self.tf_wr = self.combine_transforms(tf_wt, tf_tr) # calculate world->robot from world->tag and tag->robot
+             tf_wr = self.combine_transforms(tf_wt, tf_tr) # calculate world->robot from world->tag and tag->robot
              
              # calculate distance between robot and tag
-             distance = math.sqrt((tf_wt.transform.translation.x - self.tf_wr.transform.translation.x) ** 2 + 
-                                  (tf_wt.transform.translation.y - self.tf_wr.transform.translation.y) ** 2)
+             distance = math.sqrt((tf_wt.transform.translation.x - tf_wr.transform.translation.x) ** 2 + 
+                                  (tf_wt.transform.translation.y - tf_wr.transform.translation.y) ** 2)
              
              # pack in TFMessage and publish (debug)
              if (self.debug):
-               tf_message = TFMessage(transforms=[self.tf_wr])
+               tf_message = TFMessage(transforms=[tf_wr])
                self.debug_publisher.publish(tf_message)
                
              # build and send the pose message  
-             angles = tft.euler_from_quaternion([self.tf_wr.transform.rotation.x, self.tf_wr.transform.rotation.y,
-              					 self.tf_wr.transform.rotation.z, self.tf_wr.transform.rotation.w], axes='szyx')
+             angles = tft.euler_from_quaternion([tf_wr.transform.rotation.x, tf_wr.transform.rotation.y,
+              					 tf_wr.transform.rotation.z, tf_wr.transform.rotation.w], axes='szyx')
      
              pose_message = RoborioOdometry()
              pose_message.tag = detection.id
-             pose_message.x = self.tf_wr.transform.translation.x
-             pose_message.y = self.tf_wr.transform.translation.y
+             pose_message.x = tf_wr.transform.translation.x
+             pose_message.y = tf_wr.transform.translation.y
              pose_message.yaw = math.degrees(angles[0])
              pose_message.distance = distance
              self.pose_publisher.publish(pose_message)
