@@ -33,10 +33,3 @@ class TagTable():
     # 4, 5, 14, 15 - barge height is 178cm and approximately centered above the middle cage angled 30 degrees from vertical
     # low numbers are red, high are blue
     
-    test_tag_table = [
-      {"tagid": 1, "x": 1, "y": 1, "z": 0, "roll": 90, "pitch": 0, "yaw": 90},
-      {"tagid": 2, "x": 10.0, "y": 3.0, "z": 1.2, "roll": 0, "pitch": 90, "yaw": 0},
-      {"tagid": 3, "x": 1.0, "y": 0.5, "z": 0, "roll": 90, "pitch": 0, "yaw": 90},
-      {"tagid": 4, "x": 8.0, "y": 5, "z": 0.25, "roll": 90, "pitch": 90, "yaw": 90},
-    ]    
-    
