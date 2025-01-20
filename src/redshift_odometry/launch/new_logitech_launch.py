@@ -4,15 +4,23 @@ from launch_ros.actions import Node
 from launch import LaunchDescription
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
-
+from launch.actions import LogInfo, DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
+from launch.substitutions import PythonExpression
 from redshift_odometry.TagTable import *
  	 	  
 def generate_launch_description():
    ld = LaunchDescription()
 
-   parameter_file_path_cam = "/home/redshift/ros2_ws_2025/misc/apriltag_cam.yaml"
-
+   # to launch different file for each camera use:
+   #      ros2 launch redshift_odometry test_launch.py camera_instance:='cam1'
+   camera_instance = LaunchConfiguration('camera_instance', default='cam1')
    
+   parameter_file_path_cam1 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam1.yaml"
+   parameter_file_path_cam2 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam2.yaml"
+   
+               
    cam_comp = ComposableNode(package='usb_cam',
                              plugin='usb_cam::UsbCamNode',
                              name='cam_driver',
@@ -20,7 +28,7 @@ def generate_launch_description():
                              parameters=[
                                 {'video_device': '/dev/video2'},
                                 {'camera_name': 'logitech_cam'},
-                                {'frame_id': 'cam1'},
+                                {'frame_id': camera_instance},
                                 {'brightness': 133},
                                 {'contrast': 256},
                                 {'hue': 40.0},
@@ -42,16 +50,29 @@ def generate_launch_description():
                                                    composable_node_descriptions=[cam_comp,rect_comp])
 
  
+   #---------------------------------------------------------------------------------------------#
+   # following is the apriltag node, to support multiple cameras, had to duplicate the node as
+   # I couldn't find a better way to create the parm path.
+   #---------------------------------------------------------------------------------------------#
    apriltag_cam1_node = Node(
       package='apriltag_ros',
       executable='apriltag_node',
-      parameters=[parameter_file_path_cam],
+      parameters=[parameter_file_path_cam1],
+      condition=IfCondition(PythonExpression(['"', LaunchConfiguration('camera_instance'), '" == "cam1"']))
    )  
+
+   apriltag_cam2_node = Node(
+      package='apriltag_ros',
+      executable='apriltag_node',
+      parameters=[parameter_file_path_cam2],
+      condition=IfCondition(PythonExpression(['"', LaunchConfiguration('camera_instance'), '" == "cam2"']))
+   )  
+
 
    robot_to_cam1_node = Node(
       package='tf2_ros',
       executable='static_transform_publisher',
-      name='cam1',
+      name=camera_instance,
       output='screen',
       arguments=[
          '--x', str(0),
@@ -61,23 +82,33 @@ def generate_launch_description():
          '--pitch', str(0),
          '--yaw', str(-1.57),
          '--frame-id', 'robot',
-         '--child-frame-id', 'cam1'
+         '--child-frame-id', camera_instance
       ],
       respawn=True,
       respawn_delay=2   
    )
    
    
-   # Create a set of static transforms from world to each tag
-   # The rotation is applied in a weired order.....Z-Y-X  Yaw-Pitch-Roll 
-   # Positive is clockwise (right hand rule)
+   redshift_odometry_node = Node(
+      package='redshift_odometry',
+      executable='redshift_cam_node',
+      name='odometry',
+      output='screen',
+      parameters=[{'camera_instance': camera_instance}],
+   )
+
+
    
+   ld.add_action(DeclareLaunchArgument('camera_instance', default_value='cam1', description='camera'))    
+      
    for tag_entry in TagTable.tag_table:
       ld.add_action(create_transform_node(tag_entry))   
 
    ld.add_action(robot_to_cam1_node)   
    ld.add_action(image_processing_node)
    ld.add_action(apriltag_cam1_node)
+   ld.add_action(apriltag_cam2_node)
+   ld.add_action(redshift_odometry_node)
        
    return ld
    
@@ -85,6 +116,9 @@ def generate_launch_description():
    
    
 def create_transform_node(entry):
+   # Create a static transform from world to a tag
+   # The rotation is applied in a weired order.....Z-Y-X  Yaw-Pitch-Roll 
+   # Positive is clockwise (right hand rule)
    tag   = entry["tagid"]
    x     = entry["x"]
    y     = entry["y"]

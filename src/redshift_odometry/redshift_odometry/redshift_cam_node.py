@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from tf2_ros import Buffer, TransformListener, TransformBroadcaster
 from geometry_msgs.msg import TransformStamped, PoseStamped
 from tf2_msgs.msg import TFMessage
@@ -14,13 +15,14 @@ import math
 import tf_transformations as tft
 import pprint
 
+# to start this node, use a launch file or ros2 run redshift_odometry redshift_cam_node --ros-args -p camera_instance:=cam1
 
 class TransformNode(Node):
 
     def __init__(self):
         super().__init__('transform_node')
         
-        self.cam_id = 1           # TODO - NEED to get this as a parm to support multiple cameras
+        self.cam_id = self.declare_parameter('camera_instance', 'cam1').get_parameter_value().string_value
         self.lookup_freq = 0.02   # callback frequency in Seconds
         self.debug = 1            # 0 - off 1 - publish TEMP (for rviz), 2 - verbose
         
@@ -29,6 +31,8 @@ class TransformNode(Node):
         # BZ - turned out it is not needed, but kept it here in case we ever need this.
         # used the following website: https://www.andre-gaschler.com/rotationconverter/
         #self.adjust_dcm = np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
+        
+        self.get_logger().info("Starting Redshift camera node for " + self.cam_id)
         
         # start tag manager to find all static transforms
         self.get_logger().info("Getting tag transformations")
@@ -57,7 +61,7 @@ class TransformNode(Node):
     def detection_callback(self, msg):
        for detection in msg.detections:
           tf_wt = self.tag_manager.get_tf_for_tag(detection.id)
-          tagid = "tag" + str(detection.id) + "c" + str(self.cam_id)
+          tagid = "tag" + str(detection.id) + self.cam_id
           try:             
              if (self.debug > 1):
                 print(self.tf_buffer.all_frames_as_string())
@@ -106,7 +110,7 @@ class TransformNode(Node):
        trans_ac.header.frame_id = trans_bc.header.frame_id[:-2]  #remove the c1 from tag1c1
        trans_ac.header.frame_id = "world"
        trans_ac.child_frame_id = trans_ab.child_frame_id
-       trans_ac.child_frame_id = "TEMP"+ str(self.cam_id)     
+       trans_ac.child_frame_id = "TEMP-"+ self.cam_id     
        
        pos_ab = [trans_ab.transform.translation.x, trans_ab.transform.translation.y, trans_ab.transform.translation.z]
        pos_bc = [trans_bc.transform.translation.x, trans_bc.transform.translation.y, trans_bc.transform.translation.z]
