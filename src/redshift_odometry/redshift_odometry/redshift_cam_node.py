@@ -84,6 +84,8 @@ class TransformNode(Node):
              pose_message.y = tf_wr.transform.translation.y
              pose_message.yaw = math.degrees(angles[0])
              pose_message.distance = distance
+             pose_message.header.stamp = tf_tr.header.stamp 
+             pose_message.header.frame_id = tf_tr.header.frame_id
              self.pose_publisher.publish(pose_message)
           except Exception as e:
              if (self.debug > 0):

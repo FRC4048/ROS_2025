@@ -18,11 +18,11 @@ def generate_launch_description():
    camera_instance = LaunchConfiguration('camera_instance', default='cam1')
    
    # temp for testing on my Dell
-   #parameter_file_path_cam1 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam1.yaml"
-   #parameter_file_path_cam2 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam2.yaml"
+   parameter_file_path_cam1 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam1.yaml"
+   parameter_file_path_cam2 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam2.yaml"
    
-   parameter_file_path_cam1 = "/redshift/ros2_ws/misc/apriltag_cam1.yaml"
-   parameter_file_path_cam2 = "/redshift/ros2_ws/misc/apriltag_cam2.yaml"
+   #parameter_file_path_cam1 = "/redshift/ros2_ws/misc/apriltag_cam1.yaml"
+   #parameter_file_path_cam2 = "/redshift/ros2_ws/misc/apriltag_cam2.yaml"
    
                
    cam_comp = ComposableNode(package='usb_cam',
@@ -102,12 +102,12 @@ def generate_launch_description():
    )
 
 
-   
-   ld.add_action(DeclareLaunchArgument('camera_instance', default_value='cam1', description='camera'))    
-      
+   # BZ - TODO - the following 2 lines as well as create_transform_node function should be deleted from here and we should start static_tf_launch.py for tag transformations
+   # kept it here because Docker --network=host did not seem to share network.
    for tag_entry in TagTable.tag_table:
-      ld.add_action(create_transform_node(tag_entry))   
+      ld.add_action(create_transform_node(tag_entry))      
 
+   ld.add_action(DeclareLaunchArgument('camera_instance', default_value='cam1', description='camera'))    
    ld.add_action(robot_to_cam1_node)   
    ld.add_action(image_processing_node)
    ld.add_action(apriltag_cam1_node)
@@ -115,9 +115,6 @@ def generate_launch_description():
    ld.add_action(redshift_odometry_node)
        
    return ld
-   
-   
-   
    
 def create_transform_node(entry):
    # Create a static transform from world to a tag
@@ -150,7 +147,6 @@ def create_transform_node(entry):
       respawn_delay=2   
    )
    return(nd)   
-   
    
    
    
