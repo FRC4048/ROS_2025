@@ -14,11 +14,15 @@ def generate_launch_description():
    ld = LaunchDescription()
 
    # to launch different file for each camera use:
-   #      ros2 launch redshift_odometry test_launch.py camera_instance:='cam1'
+   #      ros2 launch redshift_odometry new_logitech_launch.py camera_instance:='cam1'
    camera_instance = LaunchConfiguration('camera_instance', default='cam1')
    
-   parameter_file_path_cam1 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam1.yaml"
-   parameter_file_path_cam2 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam2.yaml"
+   # temp for testing on my Dell
+   #parameter_file_path_cam1 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam1.yaml"
+   #parameter_file_path_cam2 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam2.yaml"
+   
+   parameter_file_path_cam1 = "/redshift/ros2_ws/misc/apriltag_cam1.yaml"
+   parameter_file_path_cam2 = "/redshift/ros2_ws/misc/apriltag_cam2.yaml"
    
                
    cam_comp = ComposableNode(package='usb_cam',

@@ -87,7 +87,7 @@ class TransformNode(Node):
              self.pose_publisher.publish(pose_message)
           except Exception as e:
              if (self.debug > 0):
-                self.get_logger().info(f'Cound not transform: {e}')
+                self.get_logger().info(f'Could not transform: {e}')
     
     
 
