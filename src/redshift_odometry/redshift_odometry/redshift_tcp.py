@@ -12,7 +12,7 @@ class TcpClientNode(Node):
         super().__init__('tcp_client_node')
         
         # Set up TCP connection parameters
-        self.server_ip = '192.168.1.204'     # 10.40.48.2
+        self.server_ip = '192.168.1.230'     # 10.40.48.2
         self.server_port = 5806
         
         # Subscribe to the /pose topic and use callback to send data over tcp
@@ -48,7 +48,7 @@ class TcpClientNode(Node):
        data = struct.pack(format_string, *msg)
        if (self.socket_connected == True):
           self.socket.sendall(data)
-       #print(msg) # BZ - delete
+       print(msg) # BZ - delete
        
 
 def main(args=None):

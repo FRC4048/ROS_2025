@@ -45,10 +45,10 @@ class TransformNode(Node):
         # set up publisher to publish transform from world->robot for debugging
         self.debug_publisher = self.create_publisher(TFMessage, '/tf', 10)
         # set up pose publisher
-        self.pose_publisher = self.create_publisher(RoborioOdometry, '/pose', 10)
+        self.pose_publisher = self.create_publisher(RoborioOdometry, '/pose', 10) # must remain /pose not pose so namespace does not affect it
                
         # create a /detections callback
-        self.create_subscription(AprilTagDetectionArray, '/detections', self.detection_callback, 10)
+        self.create_subscription(AprilTagDetectionArray, 'detections', self.detection_callback, 10)
                
     # -----------------------------------------------------------------------------------------
     # This callback function is used to search for a detection.

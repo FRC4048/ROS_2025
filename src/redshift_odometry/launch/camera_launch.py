@@ -1,13 +1,12 @@
 import os
 import math
-from launch_ros.actions import Node
+from launch_ros.actions import Node, ComposableNodeContainer, PushRosNamespace
 from launch import LaunchDescription
-from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 from launch.actions import LogInfo, DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
-from launch.substitutions import PythonExpression
+from launch.substitutions import PythonExpression, PathJoinSubstitution
 from redshift_odometry.TagTable import *
  	 	  
 def generate_launch_description():
@@ -31,7 +30,8 @@ def generate_launch_description():
                              package='usb_cam',
                              plugin='usb_cam::UsbCamNode',
                              name='cam_driver',
-                             remappings=[('/image_raw', '/image')],
+                             namespace=camera_instance,
+                             remappings=[(  PathJoinSubstitution(['/',camera_instance,'image_raw'])   ,   PathJoinSubstitution(['/',camera_instance,'image'])  )],
                              parameters=[
                                 {'video_device': '/dev/video2'},
                                 {'camera_name': 'logitech_cam'},
@@ -50,9 +50,10 @@ def generate_launch_description():
                              package='usb_cam',
                              plugin='usb_cam::UsbCamNode',
                              name='cam_driver',
-                             remappings=[('/image_raw', '/image')],   
+                             namespace=camera_instance,
+                             remappings=[(  PathJoinSubstitution(['/',camera_instance,'image_raw'])   ,   PathJoinSubstitution(['/',camera_instance,'image'])  )],
                              parameters=[
-                                {'video_device': '/dev/video2'},
+                                {'video_device': '/dev/video4'},
                                 {'camera_name': 'arducam_cam'},
                                 {'frame_id': camera_instance},
                                 {'brightness': -16},
@@ -69,12 +70,13 @@ def generate_launch_description():
    rect_comp = ComposableNode(package='image_proc',
                              plugin='image_proc::RectifyNode',
                              name='rectify',
+                             namespace=camera_instance,
                              parameters=[
                                 {'queue_size': 10}
                              ])
    
    image_processing_node = ComposableNodeContainer(
-                             namespace='',
+                             namespace=camera_instance,
                              name='image_processing_container',
                              package='rclcpp_components',
                              executable='component_container',
@@ -92,6 +94,7 @@ def generate_launch_description():
    apriltag_cam1_node = Node(
       package='apriltag_ros',
       executable='apriltag_node',
+      namespace=camera_instance,
       parameters=[parameter_file_path_cam1],
       condition=IfCondition(PythonExpression(['"', LaunchConfiguration('camera_instance'), '" == "cam1"']))
    )  
@@ -99,6 +102,7 @@ def generate_launch_description():
    apriltag_cam2_node = Node(
       package='apriltag_ros',
       executable='apriltag_node',
+      namespace=camera_instance,
       parameters=[parameter_file_path_cam2],
       condition=IfCondition(PythonExpression(['"', LaunchConfiguration('camera_instance'), '" == "cam2"']))
    )  
@@ -128,6 +132,7 @@ def generate_launch_description():
       package='redshift_odometry',
       executable='redshift_cam_node',
       name='odometry',
+      namespace=camera_instance,
       output='screen',
       parameters=[{'camera_instance': camera_instance}],
    )
@@ -139,7 +144,8 @@ def generate_launch_description():
       ld.add_action(create_transform_node(tag_entry))      
 
    ld.add_action(DeclareLaunchArgument('camera_instance', default_value='cam1', description='camera frame'))
-   ld.add_action(DeclareLaunchArgument('camera_type', default_value='L', description='camera type'))    
+   ld.add_action(DeclareLaunchArgument('camera_type', default_value='L', description='camera type'))  
+   #ld.add_action(PushRosNamespace(camera_instance))
    ld.add_action(robot_to_cam1_node)   
    ld.add_action(image_processing_node)
    ld.add_action(apriltag_cam1_node)
