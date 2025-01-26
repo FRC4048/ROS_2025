@@ -8,6 +8,7 @@ from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
 from launch.substitutions import PythonExpression, PathJoinSubstitution
 from redshift_odometry.TagTable import *
+from redshift_odometry.CamTable import *
  	 	  
 def generate_launch_description():
    ld = LaunchDescription()
@@ -16,6 +17,7 @@ def generate_launch_description():
    #      ros2 launch redshift_odometry new_logitech_launch.py camera_instance:='cam1' camera_type:='L'
    camera_instance = LaunchConfiguration('camera_instance', default='cam1')
    camera_type  = LaunchConfiguration('camera_type', default = "L")            # L for logitech, A for arducam
+
    
    # temp for testing on my Dell
    parameter_file_path_cam1 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam1.yaml"
@@ -108,6 +110,8 @@ def generate_launch_description():
    )  
 
 
+
+   # the rotation of -1.57, 0 1.57 is required to change the camera to FLU (Front Left Up)
    robot_to_cam1_node = Node(
       package='tf2_ros',
       executable='static_transform_publisher',
@@ -138,21 +142,55 @@ def generate_launch_description():
    )
 
 
-   # BZ - TODO - the following 2 lines as well as create_transform_node function should be deleted from here and we should start static_tf_launch.py for tag transformations
+   # BZ - TODO - the following 4 lines as well as create_** functions should be deleted from here and we should start static_tf_launch.py for tag transformations
    # kept it here because Docker --network=host did not seem to share network.
    for tag_entry in TagTable.tag_table:
       ld.add_action(create_transform_node(tag_entry))      
+   for cam_entry in CamTable.cam_table:
+      ld.add_action(create_robot_to_cam_node(cam_entry))
 
    ld.add_action(DeclareLaunchArgument('camera_instance', default_value='cam1', description='camera frame'))
    ld.add_action(DeclareLaunchArgument('camera_type', default_value='L', description='camera type'))  
-   #ld.add_action(PushRosNamespace(camera_instance))
-   ld.add_action(robot_to_cam1_node)   
+   #ld.add_action(PushRosNamespace(camera_instance))  # didn't work, not sure why
+   ld.add_action(apriltag_cam1_node)  
    ld.add_action(image_processing_node)
-   ld.add_action(apriltag_cam1_node)
    ld.add_action(apriltag_cam2_node)
    ld.add_action(redshift_odometry_node)
        
    return ld
+
+
+
+
+def create_robot_to_cam_node(entry):
+   cam   = entry["camid"]
+   x     = entry["x"]
+   y     = entry["y"]
+   z     = entry["z"]
+   roll  = math.radians(entry["roll"])
+   pitch = math.radians(entry["pitch"])
+   yaw   = math.radians(entry["yaw"])   
+   
+   nd = Node(
+      package='tf2_ros',
+      executable='static_transform_publisher',
+      name='RobotTo' + cam,
+      output='screen',
+      arguments=[
+         '--x', str(x),
+         '--y', str(y),
+         '--z', str(z),
+         '--roll', str(roll),
+         '--pitch', str(pitch),
+         '--yaw', str(yaw),
+         '--frame-id', 'robot',
+         '--child-frame-id', cam
+      ],
+      respawn=True,
+      respawn_delay=2   
+   )
+   return(nd)
+
    
 def create_transform_node(entry):
    # Create a static transform from world to a tag
