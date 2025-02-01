@@ -35,7 +35,6 @@ class TransformNode(Node):
         
         # start tag manager to find all static transforms
         self.get_logger().info("Getting tag transformations")
-        
         self.tag_manager = TagManager(self, self.get_logger())
 
         # create TF2 buffer and listener to get camera transforms
@@ -55,6 +54,9 @@ class TransformNode(Node):
     # We loop through all detections, find tf to robot and publish it.
     # -----------------------------------------------------------------------------------------                   
     def detection_callback(self, msg):
+       if (not self.tag_manager.all_tags_received()):
+          return
+       
        for detection in msg.detections:
           tf_wt = self.tag_manager.get_tf_for_tag(detection.id)
           tagid = "tag" + str(detection.id) + self.cam_id
