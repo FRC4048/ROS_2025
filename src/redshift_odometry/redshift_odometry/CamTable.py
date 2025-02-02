@@ -2,17 +2,35 @@ class CamTable():
     
     # transformation of cam relative to the robot. x, y, z is translation, roll, pitch, yaw is rotation.
     #
-    # NOTE: a rotation of -90, 0, 90 is required to change the camera to FLU (Front Left Up)
-    #       this is done because of how apriltag_ros publishes transformation
+    # NOTE: The robot is in FLU frame. We need to turn the camera to RDF (this is how apriltag_ros publishes transformations).
+    # to do that we apply a ZYX rotation of x=-90, y=0, z=-90
     #
     #       the rotation of camera relative to the robot has to be applied on top of that
     #       https://www.andre-gaschler.com/rotationconverter/ is helpfull....
-    #
-    # All units are meters and degrees!
-        
+    # 
+    
+    # this table has the quat transform of the camera AFTER rotating it to RDF...
+    # if there is no additional rotation, set the quaternion to qx,qy,qz,qw of 0,0,0,1
     cam_table = [
-      {"camid": "cam1" , "x": 0, "y": 0, "z": 0, "roll": -90, "pitch": 0, "yaw": -90},
-      {"camid": "cam2" , "x": 0, "y": 0, "z": 0, "roll": -90, "pitch": 0, "yaw": -90},
-      {"camid": "cam3" , "x": 0, "y": 0, "z": 0, "roll": -90, "pitch": 0, "yaw": -90},
+      {"camid": "cam1" , "x": -0.2, "y": 0, "z": 0, "qx": 0, "qy": 0, "qz": 0, "qw": 1},                   #original un-rotated
+      {"camid": "cam2" , "x": -0.2, "y": 0, "z": 0, "qx": 0.3826834, "qy": 0, "qz": 0, "qw": 0.9238795},   #tilt 45 degrees up     
+      {"camid": "cam3" , "x": -0.2, "y": 0, "z": 0, "qx": 0, "qy": -0.3826834, "qz": 0, "qw": 0.9238795},  #tilt 45 degrees left      
     ]
     
+    
+    def compound_quat(entry):
+       # following quaternion is the adjustment of the camera from FLU To RDF
+       x2, y2, z2, w2 = -0.5, 0.5, -0.5, 0.5
+                     
+       x1 = entry["qx"]
+       y1 = entry["qy"]
+       z1 = entry["qz"]       
+       w1 = entry["qw"]
+       
+       w = w2 * w1 - x2 * x1 - y2 * y1 - z2 * z1
+       x = w2 * x1 + x2 * w1 + y2 * z1 - z2 * y1
+       y = w2 * y1 - x2 * z1 + y2 * w1 + z2 * x1
+       z = w2 * z1 + x2 * y1 - y2 * x1 + z2 * w1
+       
+       return w, x, y, z
+       
