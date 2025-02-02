@@ -111,8 +111,6 @@ def generate_launch_description():
    )  
 
 
-
-   # the rotation of -1.57, 0 1.57 is required to change the camera to FLU (Front Left Up)
    robot_to_cam1_node = Node(
       package='tf2_ros',
       executable='static_transform_publisher',
