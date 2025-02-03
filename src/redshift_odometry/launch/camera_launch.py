@@ -15,18 +15,19 @@ def generate_launch_description():
 
    # to launch different file for each camera use:
    #      ros2 launch redshift_odometry new_logitech_launch.py camera_instance:='cam1' camera_type:='L'
+   
    camera_instance = LaunchConfiguration('camera_instance')     # should be values that are in CamTable
    camera_instance_arg = DeclareLaunchArgument('camera_instance', default_value='cam1', description='camera frame')
    camera_type  = LaunchConfiguration('camera_type')            # L for logitech, A for arducam
    camera_type_arg = DeclareLaunchArgument('camera_type', default_value='L', description='camera type')
    
    # temp for testing on my Dell
-   parameter_file_path_cam1 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam1.yaml"
-   parameter_file_path_cam2 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam2.yaml"
+   #parameter_file_path_cam1 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam1.yaml"
+   #parameter_file_path_cam2 = "/home/redshift/ros2_ws_2025/misc/apriltag_cam2.yaml"
 
    # real for running on the Pi   
-   #parameter_file_path_cam1 = "/redshift/ros2_ws/misc/apriltag_cam1.yaml"
-   #parameter_file_path_cam2 = "/redshift/ros2_ws/misc/apriltag_cam2.yaml" 
+   parameter_file_path_cam1 = "/redshift/ros2_ws/misc/apriltag_cam1.yaml"
+   parameter_file_path_cam2 = "/redshift/ros2_ws/misc/apriltag_cam2.yaml" 
 
 
    logitech_comp = ComposableNode(
@@ -143,11 +144,11 @@ def generate_launch_description():
 
    # BZ - TODO - the following 4 lines as well as create_** functions should be deleted from here and we should start static_tf_launch.py for tag transformations
    # kept it here because Docker --network=host did not seem to share network.
-   for tag_entry in TagTable.tag_table:
-      ld.add_action(create_transform_node(tag_entry))      
+   #for tag_entry in TagTable.tag_table:
+   #   ld.add_action(create_transform_node(tag_entry))      
    
-   for cam_entry in CamTable.cam_table:
-      ld.add_action(create_robot_to_cam_node(cam_entry))   
+   #for cam_entry in CamTable.cam_table:
+   #   ld.add_action(create_robot_to_cam_node(cam_entry))   
 
    ld.add_action(camera_instance_arg)
    ld.add_action(camera_type_arg)  

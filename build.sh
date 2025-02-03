@@ -15,6 +15,6 @@ cp start-*.sh contents
 chmod +x contents/redshift_entrypoint.sh
 chmod +x contents/start-*.sh
 
-docker build --platform linux/amd64 -t frc4048-ros2 .
+docker build --platform linux/arm64 -t frc4048-ros2 .
 
 docker save frc4048-ros2 -o frc4048-ros2.tar
