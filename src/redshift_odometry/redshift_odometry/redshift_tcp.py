@@ -12,8 +12,16 @@ class TcpClientNode(Node):
         super().__init__('tcp_client_node')
         
         # Set up TCP connection parameters
-        self.server_ip = '192.168.1.204'     # 10.40.48.2
+        self.server_ip = '192.168.1.230'     # 10.40.48.2
         self.server_port = 5806
+        
+        # Subscribe to the /pose topic and use callback to send data over tcp
+        self.pose_subscription = self.create_subscription(
+            RoborioOdometry,
+            '/pose',
+            self.tcp_callback,
+            10)
+        
         
         # Create a TCP socket
         self.socket_connected = False
@@ -28,21 +36,19 @@ class TcpClientNode(Node):
               self.get_logger().warning("Could not connect to socket. Trying again")
               time.sleep(0.1)   
         
-        # Subscribe to the /pose topic and use callback to send data over tcp
-        self.pose_subscription = self.create_subscription(
-            RoborioOdometry,
-            '/pose',
-            self.tcp_callback,
-            10)
 
     def tcp_callback(self, pose_msg):
+       # calculate latency
+       diff = self.get_clock().now() - rclpy.time.Time.from_msg(pose_msg.header.stamp)
+       latency = round(diff.nanoseconds/1e6)  # latency is in milliSeconds
+              
+       # Create message buffer with POSE (x, y, theta), DISTANCE of robot to tag, and the TAG
+       msg = [pose_msg.x, pose_msg.y, pose_msg.yaw, pose_msg.distance, latency, pose_msg.tag]
+       format_string = "!{}d{}i".format(len(msg) - 1, 1)
+       data = struct.pack(format_string, *msg)
        if (self.socket_connected == True):
-          # Create message buffer with POSE (x, y, theta), DISTANCE of robot to tag, and the TAG
-          msg = [pose_msg.x, pose_msg.y, pose_msg.yaw, pose_msg.distance, pose_msg.tag]
-          format_string = "!{}d{}i".format(len(msg) - 1, 1)
-          data = struct.pack(format_string, *msg)
           self.socket.sendall(data)
-          #print(data) # BZ - delete
+       print(msg) # BZ - delete
        
 
 def main(args=None):

@@ -29,6 +29,8 @@ class TagManager:
     def get_tf_for_tag(self, tag):
        return self.__tag_dict[tag]
        
+    def all_tags_received(self):
+       return self.received_all_static_tf   
           
     # -----------------------------------------------------------------------------------------
     # This callback function is used to find and save all the static world->tag transforms.
@@ -36,10 +38,10 @@ class TagManager:
     # -----------------------------------------------------------------------------------------
     def static_tf_callback(self, msg):
        for transform in msg.transforms:
-           self.logger.info(f"Frame: {transform.header.frame_id} -> {transform.child_frame_id}")
+           #self.logger.info(f"Frame: {transform.header.frame_id} -> {transform.child_frame_id}")
            if (transform.header.frame_id == 'world' and transform.child_frame_id[:3] == 'tag'):
               tagid = int(transform.child_frame_id[3:])
-              self.logger.info("found tag " + str(tagid))
+              self.logger.info("Found tag " + str(tagid))
               if (tagid not in self.__tag_dict):
                  self.transforms_found = self.transforms_found + 1
               self.__tag_dict[tagid] = transform

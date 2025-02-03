@@ -35,7 +35,6 @@ class TransformNode(Node):
         
         # start tag manager to find all static transforms
         self.get_logger().info("Getting tag transformations")
-        
         self.tag_manager = TagManager(self, self.get_logger())
 
         # create TF2 buffer and listener to get camera transforms
@@ -45,16 +44,19 @@ class TransformNode(Node):
         # set up publisher to publish transform from world->robot for debugging
         self.debug_publisher = self.create_publisher(TFMessage, '/tf', 10)
         # set up pose publisher
-        self.pose_publisher = self.create_publisher(RoborioOdometry, '/pose', 10)
+        self.pose_publisher = self.create_publisher(RoborioOdometry, '/pose', 10) # must remain /pose not pose so namespace does not affect it
                
         # create a /detections callback
-        self.create_subscription(AprilTagDetectionArray, '/detections', self.detection_callback, 10)
+        self.create_subscription(AprilTagDetectionArray, 'detections', self.detection_callback, 10)
                
     # -----------------------------------------------------------------------------------------
     # This callback function is used to search for a detection.
     # We loop through all detections, find tf to robot and publish it.
     # -----------------------------------------------------------------------------------------                   
     def detection_callback(self, msg):
+       if (not self.tag_manager.all_tags_received()):
+          return
+       
        for detection in msg.detections:
           tf_wt = self.tag_manager.get_tf_for_tag(detection.id)
           tagid = "tag" + str(detection.id) + self.cam_id
@@ -84,10 +86,12 @@ class TransformNode(Node):
              pose_message.y = tf_wr.transform.translation.y
              pose_message.yaw = math.degrees(angles[0])
              pose_message.distance = distance
+             pose_message.header.stamp = tf_tr.header.stamp 
+             pose_message.header.frame_id = tf_tr.header.frame_id
              self.pose_publisher.publish(pose_message)
           except Exception as e:
              if (self.debug > 0):
-                self.get_logger().info(f'Cound not transform: {e}')
+                self.get_logger().info(f'Could not transform: {e}')
     
     
 
