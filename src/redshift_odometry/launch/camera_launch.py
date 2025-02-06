@@ -50,14 +50,14 @@ def generate_launch_description():
                              condition=IfCondition(PythonExpression(['"', LaunchConfiguration('camera_type'), '" == "L"']))
                              )
                              
-   arducam_comp = ComposableNode(
+   arducam1_comp = ComposableNode(
                              package='usb_cam',
                              plugin='usb_cam::UsbCamNode',
                              name='cam_driver',
                              namespace=camera_instance,
                              remappings=[(  PathJoinSubstitution(['/',camera_instance,'image_raw'])   ,   PathJoinSubstitution(['/',camera_instance,'image'])  )],
                              parameters=[
-                                {'video_device': '/dev/video4'},
+                                {'video_device': '/dev/video0'},
                                 {'camera_name': 'arducam_cam'},
                                 {'frame_id': camera_instance},
                                 {'brightness': -16},
@@ -68,7 +68,28 @@ def generate_launch_description():
                                 {'framerate': 60.0},
                                 {'pixel_format': 'mjpeg2rgb'},
                              ],                          
-                             condition=IfCondition(PythonExpression(['"', LaunchConfiguration('camera_type'), '" == "A"']))
+                             condition=IfCondition(PythonExpression(['"', LaunchConfiguration('camera_type'), '" == "A" and "', LaunchConfiguration('camera_instance'), '" == "cam1"']))
+                             )
+   
+   arducam2_comp = ComposableNode(
+                             package='usb_cam',
+                             plugin='usb_cam::UsbCamNode',
+                             name='cam_driver',
+                             namespace=camera_instance,
+                             remappings=[(  PathJoinSubstitution(['/',camera_instance,'image_raw'])   ,   PathJoinSubstitution(['/',camera_instance,'image'])  )],
+                             parameters=[
+                                {'video_device': '/dev/video2'},
+                                {'camera_name': 'arducam_cam'},
+                                {'frame_id': camera_instance},
+                                {'brightness': -16},
+                                {'contrast': 64},
+                                {'hue': 40.0},
+                                {'image_width': 640},
+                                {'image_height': 480},
+                                {'framerate': 60.0},
+                                {'pixel_format': 'mjpeg2rgb'},
+                             ],                          
+                             condition=IfCondition(PythonExpression(['"', LaunchConfiguration('camera_type'), '" == "A" and "', LaunchConfiguration('camera_instance'), '" == "cam2"']))
                              )
 
    rect_comp = ComposableNode(package='image_proc',
@@ -86,7 +107,8 @@ def generate_launch_description():
                              executable='component_container',
                              composable_node_descriptions=[
                                  logitech_comp,
-                                 arducam_comp,
+                                 arducam1_comp,
+                                 arducam2_comp,
                                  rect_comp
                              ])
 

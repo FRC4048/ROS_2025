@@ -1,4 +1,3 @@
-version: "3"
 services:
   static:
     container_name: static
@@ -38,14 +37,6 @@ services:
     network_mode: host
     privileged: true
     ipc: host
-    command: ["./start-inverse.sh"]
-    restart: unless-stopped
-  odometry:
-    container_name: odometry
-    image: "frc4048-ros2"
-    network_mode: host
-    ipc: host
-    privileged: true
     command: ["./start-tcp.sh"]
     restart: unless-stopped
   lifesigns:
