@@ -16,6 +16,8 @@ class TcpClientNode(Node):
         # self.server_ip = '192.168.1.230'
         self.server_ip = "10.40.48.2"
         self.server_port = 5806
+        self.socket_connected = False
+
 
         # Subscribe to the /pose topic and use callback to send data over tcp
         self.pose_subscription = self.create_subscription(
