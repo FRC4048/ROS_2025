@@ -8,7 +8,7 @@ from rclpy.duration import Duration
 from apriltag_msgs.msg import AprilTagDetectionArray
 from apriltag_msgs.msg import AprilTagDetection
 from roborio_msgs.msg import RoborioOdometry
-from redshift_odometry.TagManager import *
+from redshift_odometry.TagTable import *
 
 import numpy as np
 import math
@@ -32,10 +32,6 @@ class TransformNode(Node):
         #self.adjust_dcm = np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
         
         self.get_logger().info("Starting Redshift camera node for " + self.cam_id)
-        
-        # start tag manager to find all static transforms
-        self.get_logger().info("Getting tag transformations")
-        self.tag_manager = TagManager(self, self.get_logger())
 
         # create TF2 buffer and listener to get camera transforms
         self.tf_buffer = Buffer()
@@ -53,23 +49,20 @@ class TransformNode(Node):
     # This callback function is used to search for a detection.
     # We loop through all detections, find tf to robot and publish it.
     # -----------------------------------------------------------------------------------------                   
-    def detection_callback(self, msg):
-       if (not self.tag_manager.all_tags_received()):
-          return
-       
+    def detection_callback(self, msg):       
        for detection in msg.detections:
-          tf_wt = self.tag_manager.get_tf_for_tag(detection.id)
-          tagid = "tag" + str(detection.id) + self.cam_id
+          tag = detection.id
+          tagid = "tag" + str(tag) + self.cam_id
           try:             
              if (self.debug > 1):
                 print(self.tf_buffer.all_frames_as_string())
 
              tf_tr = self.tf_buffer.lookup_transform(tagid, 'robot', rclpy.time.Time(), Duration(seconds = 0.0))  # tag->robot in tag frame 
-             tf_wr = self.combine_transforms(tf_wt, tf_tr) # calculate world->robot from world->tag and tag->robot
+             tf_wr = self.combine_transforms(tag, tf_tr) # calculate world->robot from world->tag and tag->robot
              
              # calculate distance between robot and tag
-             distance = math.sqrt((tf_wt.transform.translation.x - tf_wr.transform.translation.x) ** 2 + 
-                                  (tf_wt.transform.translation.y - tf_wr.transform.translation.y) ** 2)
+             distance = math.sqrt((TagTable.tag_table[tag]["x"] - tf_wr.transform.translation.x) ** 2 + 
+                                  (TagTable.tag_table[tag]["y"] - tf_wr.transform.translation.y) ** 2)
              
              # pack in TFMessage and publish (debug)
              if (self.debug):
@@ -81,7 +74,7 @@ class TransformNode(Node):
               					 tf_wr.transform.rotation.z, tf_wr.transform.rotation.w], axes='szyx')
      
              pose_message = RoborioOdometry()
-             pose_message.tag = detection.id
+             pose_message.tag = tag
              pose_message.x = tf_wr.transform.translation.x
              pose_message.y = tf_wr.transform.translation.y
              pose_message.yaw = math.degrees(angles[0])
@@ -104,15 +97,15 @@ class TransformNode(Node):
     # We publish a world->TEMP tf so we can view in rviz
     #
     # -----------------------------------------------------------------------------------------       
-    def combine_transforms(self, trans_ab, trans_bc):       
+    def combine_transforms(self, tag, trans_bc):       
        trans_ac = TransformStamped()
        trans_ac.header.stamp = self.get_clock().now().to_msg()
        trans_ac.header.frame_id = trans_bc.header.frame_id[:-2]  #remove the c1 from tag1c1
        trans_ac.header.frame_id = "world"
-       trans_ac.child_frame_id = trans_ab.child_frame_id
+       trans_ac.child_frame_id = "tag"+str(tag)
        trans_ac.child_frame_id = "TEMP-"+ self.cam_id     
        
-       pos_ab = [trans_ab.transform.translation.x, trans_ab.transform.translation.y, trans_ab.transform.translation.z]
+       pos_ab = [TagTable.tag_table[tag]["x"], TagTable.tag_table[tag]["y"], TagTable.tag_table[tag]["z"]]
        pos_bc = [trans_bc.transform.translation.x, trans_bc.transform.translation.y, trans_bc.transform.translation.z]
        
        if (self.debug > 1):
@@ -121,7 +114,7 @@ class TransformNode(Node):
           print ("pos_bc")
           pprint.pprint(pos_bc)
        
-       quat_ab = [trans_ab.transform.rotation.x, trans_ab.transform.rotation.y, trans_ab.transform.rotation.z, trans_ab.transform.rotation.w]
+       quat_ab = [TagTable.tag_table[tag]["qx"], TagTable.tag_table[tag]["qy"], TagTable.tag_table[tag]["qz"], TagTable.tag_table[tag]["qw"]]
        quat_bc = [trans_bc.transform.rotation.x, trans_bc.transform.rotation.y, trans_bc.transform.rotation.z, trans_bc.transform.rotation.w]
        dcm_ab = self.get_dcm_from_quat(quat_ab)
        dcm_bc = self.get_dcm_from_quat(quat_bc)   

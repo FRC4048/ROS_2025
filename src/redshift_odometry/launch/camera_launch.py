@@ -169,8 +169,8 @@ def generate_launch_description():
    #for tag_entry in TagTable.tag_table:
    #   ld.add_action(create_transform_node(tag_entry))      
    
-   #for cam_entry in CamTable.cam_table:
-   #   ld.add_action(create_robot_to_cam_node(cam_entry))   
+   for cam_entry in CamTable.cam_table:
+      ld.add_action(create_robot_to_cam_node(cam_entry))   
 
    ld.add_action(camera_instance_arg)
    ld.add_action(camera_type_arg)  
