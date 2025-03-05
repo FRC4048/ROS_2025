@@ -12,9 +12,10 @@ class CamTable():
     # this table has the quat transform of the camera AFTER rotating it to RDF...
     # if there is no additional rotation, set the quaternion to qx,qy,qz,qw of 0,0,0,1
     cam_table = [
-      {"camid": "cam1" , "x": -0.2, "y": 0, "z": 0, "qx": 0, "qy": 0, "qz": 0, "qw": 1},                   #original un-rotated
-      {"camid": "cam2" , "x": -0.2, "y": 0, "z": 0, "qx": 0.3826834, "qy": 0, "qz": 0, "qw": 0.9238795},   #tilt 45 degrees up     
-      {"camid": "cam3" , "x": -0.2, "y": 0, "z": 0, "qx": 0, "qy": -0.3826834, "qz": 0, "qw": 0.9238795},  #tilt 45 degrees left      
+      {"camid": "cam1" , "x": 0.3015, "y": -0.251, "z": 0.18, 
+                         "qx": 0.0434534, "qy": -0.0870728, "qz": 0.0038017, "qw": 0.9952465},     # new reef camera 10 left, 5 up
+      {"camid": "cam2" , "x": -0.07, "y": 0.2446, "z": 0.988, 
+                         "qx": 0.0301537, "qy": 0.9698463, "qz": -0.1710101, "qw": 0.1710101},     #elevator cam: 200 left, 20 up     
     ]
     
     
