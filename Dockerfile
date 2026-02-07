@@ -38,6 +38,7 @@ RUN source ./install/setup.bash && colcon build
 WORKDIR /root/.ros/camera_info
 COPY misc/logitech_cam.yaml .
 COPY misc/arducam_cam.yaml .
+COPY misc/arducam_new.yaml .
 COPY *.sh /redshift/
 
 WORKDIR /redshift

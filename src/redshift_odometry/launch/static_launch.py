@@ -8,8 +8,8 @@ from redshift_odometry.CamTable import *
 def generate_launch_description():
    ld = LaunchDescription()   
       
-   for tag_entry in TagTable.tag_table:
-      ld.add_action(create_transform_node(tag_entry))      
+   for tag, entry in TagTable.tag_table.items():
+      ld.add_action(create_transform_node(tag, entry))      
    
    for cam_entry in CamTable.cam_table:
       ld.add_action(create_robot_to_cam_node(cam_entry))      
@@ -46,17 +46,16 @@ def create_robot_to_cam_node(entry):
    return(nd)
 
    
-def create_transform_node(entry):
+def create_transform_node(tag, entry):
    # Create a static transform from world to a tag
-   # The rotation is applied in a weired order.....Z-Y-X  Yaw-Pitch-Roll 
    # Positive is clockwise (right hand rule)
-   tag   = entry["tagid"]
    x     = entry["x"]
    y     = entry["y"]
    z     = entry["z"]
-   roll  = math.radians(entry["roll"])
-   pitch = math.radians(entry["pitch"])
-   yaw   = math.radians(entry["yaw"])
+   qx  = entry["qx"]
+   qy  = entry["qy"]
+   qz  = entry["qz"]
+   qw  = entry["qw"]
                
    nd = Node(
       package='tf2_ros',
@@ -67,9 +66,10 @@ def create_transform_node(entry):
          '--x', str(x),
          '--y', str(y),
          '--z', str(z),
-         '--roll', str(roll),
-         '--pitch', str(pitch),
-         '--yaw', str(yaw),
+         '--qx', str(qx),
+         '--qy', str(qy),
+         '--qz', str(qz),
+         '--qw', str(qw),
          '--frame-id', 'world',
          '--child-frame-id', 'tag'+str(tag)
       ],
