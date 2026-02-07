@@ -79,7 +79,7 @@ def generate_launch_description():
                              remappings=[(  PathJoinSubstitution(['/',camera_instance,'image_raw'])   ,   PathJoinSubstitution(['/',camera_instance,'image'])  )],
                              parameters=[
                                 {'video_device': '/dev/video2'},
-                                {'camera_name': 'arducam_cam'},
+                                {'camera_name': 'arducam_new'},
                                 {'frame_id': camera_instance},
                                 {'brightness': -16},
                                 {'contrast': 64},
